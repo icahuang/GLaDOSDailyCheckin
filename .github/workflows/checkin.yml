@@ -4,8 +4,8 @@ on:
   push:
     branches: [ main ]
   schedule:
-    # 每天北京时间早上 9:00 自动执行 (UTC 1:00)
-    - cron: '0 1 * * *'
+    # 每天北京时间早上 1:00 自动执行 (UTC 17:00 前一天)
+    - cron: '0 17 * * *'
   workflow_dispatch: # 允许手动点击运行
 
 jobs:

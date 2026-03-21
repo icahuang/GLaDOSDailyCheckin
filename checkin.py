@@ -12,7 +12,7 @@ def glados_checkin():
     # 因此这里按优先级尝试新域名 -> 老域名，避免再次迁移导致脚本失效。
     base_urls = ["https://glados.cloud", "https://glados.network"]
 
-    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
 
     try:
         session = requests.Session()
@@ -75,6 +75,8 @@ def glados_checkin():
             
     except Exception as e:
         # 让 GitHub Actions 明确失败，避免“看起来跑了但其实没签到”
+        # SystemExit 会让程序立即退出，且不会显示堆栈跟踪信息。
+        # 这里用于在发生错误时退出脚本并返回错误信息，方便 CI/CD 工具（如 GitHub Actions）检测失败。
         raise SystemExit(f"签到出错: {e}")
 
 if __name__ == "__main__":
