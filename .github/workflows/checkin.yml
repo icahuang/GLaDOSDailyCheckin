@@ -10,7 +10,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # 固定到 24.04 而不是 ubuntu-latest：latest 会在 2026-10-19 ~ 11-19 之间
+    # 灰度迁移到 Ubuntu 26.04，不同仓库翻转时间不同，可能出现「什么都没改却挂了」。
+    # 24.04 标签在迁移后仍然可用，需要时手动升到 26.04 即可。
+    runs-on: ubuntu-24.04
 
     steps:
     # 这两个 action 都用 Node 24 运行时（v5/v6 起），
