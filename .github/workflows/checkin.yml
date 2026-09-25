@@ -13,13 +13,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # 这两个 action 都用 Node 24 运行时（v5/v6 起），
+    # 旧的 checkout@v3 / setup-python@v4 仍是 Node 20，会报 deprecated 警告
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
-        python-version: '3.9'
+        python-version: '3.12'
 
     - name: Install dependencies
       run: |
@@ -30,4 +32,7 @@ jobs:
     - name: Run checkin script
       env:
         GLADOS_COOKIE: ${{ secrets.GLADOS_COOKIE }}
+        # 可选：仅在遇到 code=4 device-mismatch（设备绑定）时才需要，
+        # 设成与取 Cookie 时相同的浏览器 UA。未设置时脚本用内置默认值。
+        GLADOS_USER_AGENT: ${{ secrets.GLADOS_USER_AGENT }}
       run: python checkin.py
