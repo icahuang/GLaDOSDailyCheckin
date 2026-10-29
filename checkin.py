@@ -5,7 +5,7 @@ import requests
 
 # 接口定义取自 GLaDOS 线上前端 bundle（app.bundle.js / static/js/*.chunk.js）：
 #   POST {base}/api/user/checkin   body: {"token": <hostname>}
-#   baseURL = "/api"，鉴权只依赖浏览器 Cookie(koa:sess / koa:sess.sig)，
+#   baseURL = "/api"，鉴权只依赖浏览器 Cookie(gld:sess / gld:sess.sig)，
 #   前端没有额外携带 Authorization 或设备指纹请求头。
 CHECKIN_PATH = "/api/user/checkin"
 STATUS_PATH = "/api/user/status"
@@ -30,14 +30,25 @@ DEFAULT_USER_AGENT = (
 AUTH_ERROR_CODE = -2
 
 # 消息里出现这些字样说明今天已经签过了，属于成功路径而非失败。
-ALREADY_CHECKED_IN_HINTS = ("已经签到", "已签到", "already")
+ALREADY_CHECKED_IN_HINTS = (
+    "已经签到", "已签到", "already checked in", "already checked-in",
+    "today's observation logged",
+)
+
+
+def is_checkin_success(code, message):
+    # 限制 code=1，避免把认证错误等其他失败误判为成功。
+    return code == 0 or (
+        code == 1
+        and any(hint in str(message).lower() for hint in ALREADY_CHECKED_IN_HINTS)
+    )
 
 
 def normalize_cookie(raw):
     """把从浏览器/Secrets 复制来的 Cookie 规整成合法的 Cookie 头。
 
     手工粘贴 Cookie 时最常见的几个坑：带上了 "Cookie: " 前缀、首尾有引号、
-    分号前后混入换行。这些都会让服务端解析不到 koa:sess 而直接返回 -2。
+    分号前后混入换行。这些都会让服务端解析不到会话 Cookie 而直接返回 -2。
     """
     value = raw.strip().strip('"').strip("'").strip()
     if value.lower().startswith("cookie:"):
@@ -104,7 +115,7 @@ def attempt(base, cookie, user_agent):
     code, message, payload = parse_response(response)
     print(f"[{base}] 签到返回: code={code}, message={message}")
 
-    if code != 0:
+    if not is_checkin_success(code, message):
         raise RuntimeError(describe_failure(code, message, payload))
 
     # 查询余额/天数状态。这一步只是展示信息，失败不应让签到被判为失败。
@@ -129,8 +140,8 @@ def glados_checkin():
     cookie_names = [item.split("=", 1)[0].strip() for item in cookie.split("; ")]
     # 只打印字段名，不打印值，避免 Cookie 泄漏到 Actions 日志
     print(f"Cookie 字段: {', '.join(cookie_names)}")
-    if not any(name.startswith("koa:sess") for name in cookie_names):
-        print("警告: Cookie 中缺少 koa:sess，几乎可以确定会在服务端认证失败。")
+    if not {"gld:sess", "gld:sess.sig"}.issubset(cookie_names):
+        print("警告: Cookie 中缺少 gld:sess 或 gld:sess.sig，请重新登录并复制完整 Cookie。")
 
     user_agent = os.environ.get("GLADOS_USER_AGENT") or DEFAULT_USER_AGENT
 
